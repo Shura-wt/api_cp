@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2017-latest
+    container_name: mssql
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=StrongP@ssw0rd!
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+      - ./init-db.sql:/init-db.sql
+      - ./mssql-entrypoint.sh:/mssql-entrypoint.sh
+    entrypoint: ["/bin/bash", "/mssql-entrypoint.sh"]
+    healthcheck:
+      test: >
+        /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "StrongP@ssw0rd!" -Q "SELECT 1" &&
+        /opt/mssql-tools/bin/sqlcmd -S localhost -U Externe -P "Secur3P@ssw0rd!" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    restart: unless-stopped
+
+  flask-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flask-app
+    environment:
+      - DB_USER=Externe
+      - DB_PASSWORD=Secur3P@ssw0rd!
+      - DB_HOST=mssql
+      - DB_NAME=master
+      - DB_PORT=1433
+    ports:
+      - "5000:5000"
+    depends_on:
+      mssql:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mssql-data:
+    driver: local
