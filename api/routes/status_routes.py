@@ -990,3 +990,107 @@ def get_status_by_user(user_id):
     except Exception as e:
         current_app.logger.error(f"Error in get_status_by_user: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@status_bp.route('/site/<int:site_id>/latest', methods=['GET'])
+@swag_from({
+    'tags': ['Status CRUD'],
+    'description': 'Récupère les derniers statuts pour tous les BAES d’un site donné.',
+    'parameters': [{ 'name': 'site_id', 'in': 'path', 'type': 'integer', 'required': True }],
+    'responses': {200: {'description': 'Liste des derniers statuts.'}, 404: {'description': 'Site ou BAES non trouvés.'}}
+})
+def get_latest_status_by_site(site_id):
+    try:
+        from models.site import Site
+        from models.batiment import Batiment
+        from models.etage import Etage
+        from models.baes import Baes
+        site = Site.query.get(site_id)
+        if not site:
+            return jsonify({'error': 'Site non trouvé'}), 404
+
+        # Get all BAES that belong to the site
+        baes_list = Baes.query.join(Etage, Baes.etage_id == Etage.id).\
+            join(Batiment, Etage.batiment_id == Batiment.id).\
+            filter(Batiment.site_id == site_id).all()
+
+        if not baes_list:
+            return jsonify([]), 200
+
+        results = []
+        from models.status import Status
+        for b in baes_list:
+            latest = Status.query.filter_by(baes_id=b.id).order_by(Status.updated_at.desc()).first()
+            if latest:
+                acknowledged_by_login = None
+                if latest.acknowledged_by_user_id:
+                    from models.user import User
+                    u = User.query.get(latest.acknowledged_by_user_id)
+                    if u:
+                        acknowledged_by_login = u.login
+                results.append({
+                    'id': latest.id,
+                    'erreur': latest.erreur,
+                    'is_ignored': latest.is_ignored,
+                    'is_solved': latest.is_solved,
+                    'temperature': latest.temperature,
+                    'timestamp': latest.timestamp.isoformat() if latest.timestamp else None,
+                    'vibration': latest.vibration,
+                    'baes_id': latest.baes_id,
+                    'updated_at': latest.updated_at.isoformat() if getattr(latest, 'updated_at', None) else None,
+                    'acknowledged_at': latest.acknowledged_at.isoformat() if getattr(latest, 'acknowledged_at', None) else None,
+                    'acknowledged_by_login': acknowledged_by_login,
+                    'acknowledged_by_user_id': latest.acknowledged_by_user_id,
+                })
+        return jsonify(results), 200
+    except Exception as e:
+        current_app.logger.error(f"Error in get_latest_status_by_site: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@status_bp.route('/site/<int:site_id>/summary', methods=['GET'])
+@swag_from({
+    'tags': ['Status CRUD'],
+    'description': 'Retourne des compteurs par type pour un site (connexion=0, batterie=4, ok=6, inconnu).',
+    'parameters': [{ 'name': 'site_id', 'in': 'path', 'type': 'integer', 'required': True }],
+    'responses': {200: {'description': 'Résumé'}, 404: {'description': 'Site non trouvé'}}
+})
+def get_status_summary_by_site(site_id):
+    try:
+        from models.site import Site
+        from models.batiment import Batiment
+        from models.etage import Etage
+        from models.baes import Baes
+        from models.status import Status
+        site = Site.query.get(site_id)
+        if not site:
+            return jsonify({'error': 'Site non trouvé'}), 404
+
+        baes_list = Baes.query.join(Etage, Baes.etage_id == Etage.id).\
+            join(Batiment, Etage.batiment_id == Batiment.id).\
+            filter(Batiment.site_id == site_id).all()
+
+        counters = {
+            'connection_errors': 0,
+            'battery_errors': 0,
+            'ok': 0,
+            'unknown': 0
+        }
+
+        for b in baes_list:
+            latest = Status.query.filter_by(baes_id=b.id).order_by(Status.updated_at.desc()).first()
+            if not latest:
+                counters['unknown'] += 1
+            else:
+                if latest.erreur == 0:
+                    counters['connection_errors'] += 1
+                elif latest.erreur == 4:
+                    counters['battery_errors'] += 1
+                elif latest.erreur == 6:
+                    counters['ok'] += 1
+                else:
+                    counters['unknown'] += 1
+        return jsonify(counters), 200
+    except Exception as e:
+        current_app.logger.error(f"Error in get_status_summary_by_site: {e}")
+        return jsonify({'error': str(e)}), 500
