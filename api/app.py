@@ -68,8 +68,8 @@ swagger_config = {
         {
             "endpoint": "apispec",
             "route": "/apispec.json",
-            # Exclure les anciennes routes '/erreurs' de la documentation pour éviter les doublons
-            "rule_filter": lambda rule: not rule.rule.startswith('/erreurs'),
+            # Exclure certaines routes legacy de la documentation pour éviter les doublons
+            "rule_filter": lambda rule: not (rule.rule.startswith('/erreurs') or rule.rule.startswith('/user-site-roles')),
             "model_filter": lambda tag: True,
         }
     ],

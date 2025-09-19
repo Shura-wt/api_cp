@@ -32,6 +32,8 @@ def init_app(app):
     # Register the same blueprint with the new URL prefix, using a unique name
     app.register_blueprint(status_bp, url_prefix='/status', name='status_bp_new')
     app.register_blueprint(user_site_role_bp, url_prefix='/user_site_role')
+    # Legacy alias for backward compatibility
+    app.register_blueprint(user_site_role_bp, url_prefix='/user-site-roles', name='user_site_role_bp_legacy')
     app.register_blueprint(general_routes_bp, url_prefix='/general')
     app.register_blueprint(config_bp, url_prefix='/config')
     # Root-level routes (e.g., /me)

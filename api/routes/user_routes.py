@@ -273,7 +273,7 @@ def create_user():
     return jsonify(result), 201
 
 
-@user_bp.route('/<int:user_id>', methods=['PUT'])
+@user_bp.route('/<int:user_id>', methods=['PUT', 'PATCH'])
 @swag_from({
     'tags': ['User CRUD'],
     'description': "Met à jour un utilisateur existant par son ID.",

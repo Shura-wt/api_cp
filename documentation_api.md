@@ -1,5 +1,23 @@
 # BAES API – Documentation des routes avec schémas JSON
 
+## Résumé de l’API et technologies utilisées
+- Objet: API REST pour gérer les BAES (Blocs Autonomes d’Éclairage de Sécurité) et leur référentiel: sites, bâtiments, étages, équipements BAES, statuts/erreurs, cartes/coordonnées, utilisateurs et rôles.
+- Principales fonctionnalités:
+  - Authentification (JWT) et gestion de session légère (login/logout).
+  - CRUD sur les entités: utilisateurs, rôles, sites, bâtiments, étages, BAES, statuts, cartes.
+  - Attribution de rôles par site et rôles globaux via user_site_role.
+  - Documentation intégrée Swagger (Flasgger) sur /swagger/ et schéma exposé sur /apispec.json.
+  - CORS activé pour appels front-end.
+- Technologies clés:
+  - Backend: Python Flask.
+  - BDD: Microsoft SQL Server 2017 via SQLAlchemy + pyodbc (ODBC Driver 17).
+  - Migrations: Flask-Migrate (Alembic).
+  - Auth et session: Flask-Login (pour gestion utilisateur) + JWT applicatif.
+  - Documentation: Flasgger/Swagger UI.
+  - Conteneurisation: Docker + docker-compose.
+  - Exécution en prod conteneur: uWSGI + supervisord.
+  - Outils/utilitaires: Bridge MQTT -> API (scripts/mqtt_to_baesapi.py), CORS, logging.
+
 Dernière mise à jour: 2025-09-01 11:29
 
 Cette documentation fournit, pour chaque route, l’URL appelée, les paramètres, les corps JSON envoyés/reçus et les types de données. Les types suivent la convention JSON: string, integer, number, boolean, object, array, null. Les dates sont des strings au format ISO 8601.
@@ -313,3 +331,14 @@ Les mêmes schémas s’appliquent à /erreurs/...
 Références
 - Swagger UI: /swagger/
 - Spécification JSON: /apispec.json (les routes legacy /erreurs sont exclues de la spec pour éviter les doublons)
+
+
+## Swagger / OpenAPI
+
+- UI: http://localhost:5000/swagger/
+- JSON spec: http://localhost:5000/apispec.json
+
+Notes:
+- Legacy paths are hidden from the Swagger doc to avoid duplicate endpoints:
+  - /erreurs (legacy for status) is excluded in favor of /status
+  - /user-site-roles (legacy alias) is excluded in favor of /user_site_role
