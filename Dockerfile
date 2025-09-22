@@ -19,12 +19,11 @@ RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .
 
 COPY api/ ./api/
 COPY scripts/ ./scripts/
-#COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY start.sh .
 # Normalize line endings and make the script executable
 RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
 EXPOSE 5000
 
-#CMD ["/usr/bin/supervisord"]
-CMD ["./start.sh"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
