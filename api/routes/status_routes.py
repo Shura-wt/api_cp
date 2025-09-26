@@ -494,7 +494,7 @@ def update_status_status(status_id):
         current_app.logger.error(f"Error in update_status_status: {e}")
         return jsonify({'error': str(e)}), 500
 
-@status_bp.route('/baes/<int:baes_id>/type/<int:_erreur>', methods=['PUT'])
+@status_bp.route('/baes/<int:baes_id>/type/<int:erreur>', methods=['PUT'])
 @swag_from({
     'tags': ['Status CRUD'],
     'description': "Modifie les détails d'une erreur identifiée par le BAES et le type d'erreur.",
@@ -524,7 +524,9 @@ def update_status_status(status_id):
                 'type': 'object',
                 'properties': {
                     'is_solved': {'type': 'boolean', 'example': False},
-                    'is_ignored': {'type': 'boolean', 'example': False}
+                    'is_ignored': {'type': 'boolean', 'example': False},
+                    'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
+                    'vibration': {'type': 'boolean', 'example': True, 'nullable': True}
                 }
             }
         }
@@ -574,6 +576,21 @@ def update_status(baes_id, erreur):
 
         if 'is_ignored' in data:
             status_obj.is_ignored = data['is_ignored']
+
+        # Facultatif: mise à jour des valeurs de mesure
+        if 'temperature' in data:
+            try:
+                status_obj.temperature = float(data['temperature']) if data['temperature'] is not None else None
+            except (TypeError, ValueError):
+                # Ignorer silencieusement si la valeur n'est pas convertible
+                pass
+        if 'vibration' in data:
+            # Accepte bool, 0/1, "true"/"false"
+            val = data['vibration']
+            if isinstance(val, str):
+                status_obj.vibration = val.strip().lower() in ['1', 'true', 'yes', 'on']
+            else:
+                status_obj.vibration = bool(val)
 
         db.session.commit()
 

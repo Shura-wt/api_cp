@@ -231,7 +231,7 @@ Les mêmes schémas s’appliquent à /erreurs/...
 - PUT /status/{status_id}/status
   - Requête: { "is_solved"?: boolean, "is_ignored"?: boolean, "acknowledged_by_user_id"?: integer|null, "acknowledged_at"?: string|null }
   - Réponse 200: { ... }
-- PUT /status/baes/{baes_id}/type/{_erreur}
+- PUT /status/baes/{baes_id}/type/{erreur}
   - Requête: { "is_solved"?: boolean, "is_ignored"?: boolean }
   - Réponse 200: { ... }
 - GET /status/acknowledged
