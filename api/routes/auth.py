@@ -1,8 +1,7 @@
 from flask import Blueprint, request, jsonify, redirect, url_for, render_template, current_app
 from flask_login import login_user, logout_user, login_required
 from flasgger import swag_from
-from models.user import User
-from models import db
+from models import User, db
 import jwt
 import datetime
 

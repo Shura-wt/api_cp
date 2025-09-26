@@ -1,9 +1,7 @@
 # routes/status_routes.py
 from flask import Blueprint, request, jsonify, current_app
 from flasgger import swag_from
-from models.status import Status
-from models.baes import Baes
-from models import db
+from models import Status, Baes, User, Site, UserSiteRole, Batiment, Etage, db
 from flask_login import current_user, login_required
 from datetime import datetime, timezone
 
@@ -168,7 +166,6 @@ def get_statuses_after_timestamp(updated_at):
             # Récupérer le login de l'utilisateur qui a acquitté l'erreur
             acknowledged_by_login = None
             if e.acknowledged_by_user_id:
-                from models.user import User
                 user = User.query.get(e.acknowledged_by_user_id)
                 if user:
                     acknowledged_by_login = user.login
@@ -246,7 +243,7 @@ def get_statuses_by_baes(baes_id):
             # Récupérer le login de l'utilisateur qui a acquitté l'erreur
             acknowledged_by_login = None
             if e.acknowledged_by_user_id:
-                from models.user import User
+                from models import User
                 user = User.query.get(e.acknowledged_by_user_id)
                 if user:
                     acknowledged_by_login = user.login

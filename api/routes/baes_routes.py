@@ -1,14 +1,7 @@
 # routes/baes_routes.py
 from flask import Blueprint, request, jsonify, current_app
 from flasgger import swag_from
-from models.baes import Baes
-from models.user import User
-from models.user_site_role import UserSiteRole
-from models.site import Site
-from models.batiment import Batiment
-from models.etage import Etage
-from models.status import Status
-from models import db
+from models import Baes, User, UserSiteRole, Site, Batiment, Etage, Status, db
 from sqlalchemy import desc, func
 from sqlalchemy.orm import aliased
 

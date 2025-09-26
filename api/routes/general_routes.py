@@ -2,12 +2,7 @@ import os
 
 from flask import Blueprint, request, jsonify ,url_for, current_app
 from flasgger import swag_from
-from models.user import User
-from models.site import Site
-from models.batiment import Batiment
-from models.etage import Etage
-from models.baes import Baes
-from models.status import Status
+from models import User, Site, Batiment, Etage, Baes, Status
 
 general_routes_bp = Blueprint('general_routes_bp', __name__)
 

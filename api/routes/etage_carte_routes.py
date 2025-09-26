@@ -4,10 +4,7 @@ import uuid
 from flask import Blueprint, request, jsonify, current_app, url_for
 from flasgger import swag_from
 from werkzeug.utils import secure_filename
-from models.etage import Etage
-from models.carte import Carte
-from models.site import Site
-from models import db
+from models import Etage, Carte, Site, db
 
 def generate_unique_filename(original_filename):
     """Generate a unique filename using UUID while preserving the file extension."""

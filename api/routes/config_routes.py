@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from flasgger import swag_from
-from models.config import Config
-from models import db
+from models import Config, db
 from sqlalchemy.exc import IntegrityError
 
 

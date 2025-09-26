@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from flasgger import swag_from
-from models.role import Role
-from models import db
+from models import Role, db
 
 role_bp = Blueprint('role_bp', __name__)
 

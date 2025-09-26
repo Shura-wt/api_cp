@@ -1,8 +1,7 @@
 # routes/site_routes.py
 from flask import Blueprint, request, jsonify, current_app
 from flasgger import swag_from
-from models.site import Site
-from models import db
+from models import Site, db
 
 site_bp = Blueprint('site_bp', __name__)
 

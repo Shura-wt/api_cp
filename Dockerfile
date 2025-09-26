@@ -22,7 +22,7 @@ COPY scripts/ ./scripts/
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY start.sh .
 # Normalize line endings and make the script executable
-RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
+#RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
 EXPOSE 5000
 

@@ -12,9 +12,7 @@ from flasgger import Swagger
 from flask_login import LoginManager
 from sqlalchemy.exc import OperationalError, InterfaceError
 
-from models import db
-from models.user import User
-from models.site import Site
+from models import db, User, Site
 from default_data import create_default_data
 
 # Initialisation de l'application Flask

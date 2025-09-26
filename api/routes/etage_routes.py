@@ -1,10 +1,7 @@
 # routes/etage_routes.py
 from flask import Blueprint, request, jsonify, current_app
 from flasgger import swag_from
-from models.etage import Etage
-from models.baes import Baes
-from models.carte import Carte
-from models import db
+from models import Etage, Baes, Carte, db
 from routes.general_routes import status_to_dict
 
 etage_bp = Blueprint('etage_bp', __name__)
