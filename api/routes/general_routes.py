@@ -20,7 +20,6 @@ def status_to_dict(err: Status) -> dict:
         'vibration': err.vibration,
         'timestamp': err.timestamp.isoformat(),
         'is_solved': err.is_solved,
-        'is_ignored': err.is_ignored,
     }
 
 
@@ -29,6 +28,9 @@ def baes_to_dict(b: Baes) -> dict:
         'id': b.id,
         'name': b.name,
         'position': b.position,
+        'etage_id': b.etage_id,
+        'label': getattr(b, 'label', None),
+        'is_ignored': getattr(b, 'is_ignored', False),
         'statuses': [status_to_dict(e) for e in b.statuses] if b.statuses else [],
     }
 

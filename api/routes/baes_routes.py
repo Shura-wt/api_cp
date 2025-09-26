@@ -47,7 +47,8 @@ def get_baes():
             'name': b.name,
             'label': b.label,
             'position': b.position,
-            'etage_id': b.etage_id
+            'etage_id': b.etage_id,
+            'is_ignored': b.is_ignored
         } for b in baes_list]
         return jsonify(result), 200
     except Exception as e:
@@ -95,7 +96,8 @@ def get_baes_by_id(baes_id):
             'name': baes.name,
             'label': baes.label,
             'position': baes.position,
-            'etage_id': baes.etage_id
+            'etage_id': baes.etage_id,
+            'is_ignored': baes.is_ignored
         }
         return jsonify(result), 200
     except Exception as e:
@@ -150,7 +152,8 @@ def create_baes():
             name=data['name'],
             label=data.get('label'),
             position=data['position'],
-            etage_id=data['etage_id']
+            etage_id=data['etage_id'],
+            is_ignored=bool(data.get('is_ignored', False))
         )
         db.session.add(baes)
         db.session.commit()
@@ -159,7 +162,8 @@ def create_baes():
             'name': baes.name,
             'label': baes.label,
             'position': baes.position,
-            'etage_id': baes.etage_id
+            'etage_id': baes.etage_id,
+            'is_ignored': baes.is_ignored
         }
         return jsonify(result), 201
     except Exception as e:
@@ -227,13 +231,16 @@ def update_baes(baes_id):
             baes.position = data['position']
         if 'etage_id' in data:
             baes.etage_id = data['etage_id']
+        if 'is_ignored' in data:
+            baes.is_ignored = bool(data['is_ignored'])
         db.session.commit()
         result = {
             'id': baes.id,
             'name': baes.name,
             'label': baes.label,
             'position': baes.position,
-            'etage_id': baes.etage_id
+            'etage_id': baes.etage_id,
+            'is_ignored': baes.is_ignored
         }
         return jsonify(result), 200
     except Exception as e:
@@ -314,7 +321,8 @@ def get_baes_without_etage():
             'name': b.name,
             'label': b.label,
             'position': b.position,
-            'etage_id': b.etage_id
+            'etage_id': b.etage_id,
+            'is_ignored': b.is_ignored
         } for b in baes_list]
         return jsonify(result), 200
     except Exception as e:
@@ -417,6 +425,7 @@ def get_baes_by_user(user_id):
                 'label': baes.label,
                 'position': baes.position,
                 'etage_id': baes.etage_id,
+                'is_ignored': getattr(baes, 'is_ignored', False),
                 'latest_status': None
             }
             
@@ -425,7 +434,6 @@ def get_baes_by_user(user_id):
                     'id': latest_status.id,
                     'erreur': latest_status.erreur,
                     'is_solved': latest_status.is_solved,
-                    'is_ignored': latest_status.is_ignored,
                     'temperature': latest_status.temperature,
                     'vibration': latest_status.vibration,
                     'timestamp': latest_status.timestamp.isoformat() if latest_status.timestamp else None
@@ -436,4 +444,77 @@ def get_baes_by_user(user_id):
         return jsonify(result), 200
     except Exception as e:
         current_app.logger.error(f"Error in get_baes_by_user: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@baes_bp.route('/<int:baes_id>/ignore', methods=['PUT'])
+@swag_from({
+    'tags': ['BAES Operations'],
+    'description': "Met à jour le statut d'ignorance (is_ignored) d'un BAES.",
+    'consumes': ['application/json'],
+    'parameters': [
+        {
+            'name': 'baes_id',
+            'in': 'path',
+            'type': 'integer',
+            'required': True,
+            'description': "ID du BAES à mettre à jour"
+        },
+        {
+            'name': 'body',
+            'in': 'body',
+            'required': True,
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'is_ignored': {'type': 'boolean', 'example': True}
+                },
+                'required': ['is_ignored']
+            }
+        }
+    ],
+    'responses': {
+        200: {
+            'description': 'BAES mis à jour avec succès.',
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'id': {'type': 'integer', 'format': 'int64', 'example': 1},
+                    'name': {'type': 'string', 'example': 'BAES 1'},
+                    'label': {'type': 'string', 'example': 'Étiquette BAES 1'},
+                    'position': {'type': 'object', 'example': {"x": 100, "y": 200}},
+                    'etage_id': {'type': 'integer', 'example': 1, 'nullable': True},
+                    'is_ignored': {'type': 'boolean', 'example': True}
+                }
+            }
+        },
+        400: {'description': 'Mauvaise requête.'},
+        404: {'description': 'BAES non trouvé.'}
+    }
+})
+def set_baes_ignore(baes_id):
+    try:
+        data = request.get_json() or {}
+        if 'is_ignored' not in data:
+            return jsonify({'error': "Le champ 'is_ignored' est requis (boolean)."}), 400
+
+        baes = Baes.query.get(baes_id)
+        if not baes:
+            return jsonify({'error': 'BAES non trouvé'}), 404
+
+        baes.is_ignored = bool(data['is_ignored'])
+        db.session.commit()
+
+        result = {
+            'id': baes.id,
+            'name': baes.name,
+            'label': baes.label,
+            'position': baes.position,
+            'etage_id': baes.etage_id,
+            'is_ignored': baes.is_ignored
+        }
+        return jsonify(result), 200
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error in set_baes_ignore: {e}")
         return jsonify({'error': str(e)}), 500

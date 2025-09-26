@@ -176,17 +176,17 @@ Sommaire des sections
 - DELETE /etages/{etage_id}
   - Réponse 200: { "message": string } | 404
 - GET /etages/{etage_id}/baes
-  - Réponse 200: [ { "id": integer, "name": string, "label"?: string, "position"?: object, "etage_id": integer } ]
+  - Réponse 200: [ { "id": integer, "name": string, "label"?: string, "position"?: object, "etage_id": integer, "is_ignored": boolean } ]
 
 
 ## BAES (/baes)
 - GET /baes/
-  - Réponse 200: [ { "id": integer, "name": string, "label"?: string, "position"?: object, "etage_id": integer|null } ]
+  - Réponse 200: [ { "id": integer, "name": string, "label"?: string, "position"?: object, "etage_id": integer|null, "is_ignored": boolean } ]
 - GET /baes/{baes_id}
-  - Réponse 200: { id, name, label?, position?, etage_id?, created_at, updated_at } | 404
+  - Réponse 200: { id, name, label?, position?, etage_id?, is_ignored, created_at, updated_at } | 404
 - POST /baes/
-  - Requête: { "name": string, "label"?: string, "position"?: object, "etage_id"?: integer|null }
-  - Réponse 201: { id, name, label?, position?, etage_id? }
+  - Requête: { "name": string, "label"?: string, "position"?: object, "etage_id"?: integer|null, "is_ignored"?: boolean }
+  - Réponse 201: { id, name, label?, position?, etage_id?, is_ignored }
 - PUT /baes/{baes_id}
   - Requête: { champs BAES à modifier }
   - Réponse 200: { ... } | 404
@@ -196,6 +196,9 @@ Sommaire des sections
   - Réponse 200: [ BAES sans etage_id ]
 - GET /baes/user/{user_id}
   - Réponse 200: [ BAES visibles pour l’utilisateur ]
+- PUT /baes/{baes_id}/ignore
+  - Requête: { "is_ignored": boolean }
+  - Réponse 200: { id, name, label?, position?, etage_id?, is_ignored }
 
 
 ## Statuts / Erreurs (/status) [alias: /erreurs]

@@ -46,7 +46,6 @@ def get_statuses():
             'baes_id': e.baes_id,
             'erreur': e.erreur,
             'is_solved': e.is_solved,
-            'is_ignored': e.is_ignored,
             'temperature': e.temperature,
             'vibration': e.vibration,
             'timestamp': e.timestamp.isoformat() if e.timestamp else None,
@@ -101,7 +100,6 @@ def get_status(status_id):
             'baes_id': status.baes_id,
             'erreur': status.erreur,
             'is_solved': status.is_solved,
-            'is_ignored': status.is_ignored,
             'temperature': status.temperature,
             'vibration': status.vibration,
             'timestamp': status.timestamp.isoformat() if status.timestamp else None,
@@ -180,7 +178,6 @@ def get_statuses_after_timestamp(updated_at):
                 'baes_id': e.baes_id,
                 'erreur': e.erreur,
                 'is_solved': e.is_solved,
-                'is_ignored': e.is_ignored,
                 'temperature': e.temperature,
                 'vibration': e.vibration,
                 'timestamp': e.timestamp.isoformat() if e.timestamp else None,
@@ -259,7 +256,6 @@ def get_statuses_by_baes(baes_id):
                 'baes_id': e.baes_id,
                 'erreur': e.erreur,
                 'is_solved': e.is_solved,
-                'is_ignored': e.is_ignored,
                 'temperature': e.temperature,
                 'vibration': e.vibration,
                 'timestamp': e.timestamp.isoformat() if e.timestamp else None,
@@ -355,7 +351,6 @@ def create_status():
             baes_id=data['baes_id'],
             erreur=data['erreur'],
             is_solved=data.get('is_solved', False),
-            is_ignored=data.get('is_ignored', False),
             temperature=data.get('temperature'),  # Utiliser la température fournie ou null
             vibration=data.get('vibration', False)  # Utiliser la vibration fournie ou False par défaut
         )
@@ -367,7 +362,6 @@ def create_status():
             'baes_id': status.baes_id,
             'erreur': status.erreur,
             'is_solved': status.is_solved,
-            'is_ignored': status.is_ignored,
             'temperature': status.temperature,
             'vibration': status.vibration,
             'timestamp': status.timestamp.isoformat() if status.timestamp else None,
@@ -447,9 +441,6 @@ def update_status_status(status_id):
         if 'is_solved' in data and status.is_solved != data['is_solved']:
             status.is_solved = data['is_solved']
             status_changed = True
-        if 'is_ignored' in data and status.is_ignored != data['is_ignored']:
-            status.is_ignored = data['is_ignored']
-            status_changed = True
 
         # Si l'état a changé, enregistrer l'utilisateur qui a fait l'acquittement
         if status_changed:
@@ -480,7 +471,6 @@ def update_status_status(status_id):
             'baes_id': status.baes_id,
             'erreur': status.erreur,
             'is_solved': status.is_solved,
-            'is_ignored': status.is_ignored,
             'temperature': status.temperature,
             'vibration': status.vibration,
             'timestamp': status.timestamp.isoformat() if status.timestamp else None,
@@ -574,8 +564,6 @@ def update_status(baes_id, erreur):
         if 'is_solved' in data:
             status_obj.is_solved = data['is_solved']
 
-        if 'is_ignored' in data:
-            status_obj.is_ignored = data['is_ignored']
 
         # Facultatif: mise à jour des valeurs de mesure
         if 'temperature' in data:
@@ -607,7 +595,6 @@ def update_status(baes_id, erreur):
             'baes_id': status_obj.baes_id,
             'erreur': status_obj.erreur,
             'is_solved': status_obj.is_solved,
-            'is_ignored': status_obj.is_ignored,
             'temperature': status_obj.temperature,
             'vibration': status_obj.vibration,
             'timestamp': status_obj.timestamp.isoformat() if status_obj.timestamp else None,
@@ -672,7 +659,6 @@ def get_acknowledged_statuses():
                 'baes_id': e.baes_id,
                 'erreur': e.erreur,
                 'is_solved': e.is_solved,
-                'is_ignored': e.is_ignored,
                 'temperature': e.temperature,
                 'vibration': e.vibration,
                 'timestamp': e.timestamp.isoformat() if e.timestamp else None,
@@ -761,7 +747,6 @@ def get_statuses_by_etage(etage_id):
                     'baes_name': baes.name,
                     'erreur': e.erreur,
                     'is_solved': e.is_solved,
-                    'is_ignored': e.is_ignored,
                     'temperature': e.temperature,
                     'vibration': e.vibration,
                     'timestamp': e.timestamp.isoformat() if e.timestamp else None,
@@ -825,7 +810,6 @@ def get_latest_status():
             'baes_id': status.baes_id,
             'erreur': status.erreur,
             'is_solved': status.is_solved,
-            'is_ignored': status.is_ignored,
             'temperature': status.temperature,
             'vibration': status.vibration,
             'timestamp': status.timestamp.isoformat() if status.timestamp else None,
@@ -987,6 +971,7 @@ def get_status_by_user(user_id):
                 'label': baes.label,
                 'position': baes.position,
                 'etage_id': baes.etage_id,
+                'is_ignored': getattr(baes, 'is_ignored', False),
                 'latest_status': None
             }
             
@@ -995,7 +980,6 @@ def get_status_by_user(user_id):
                     'id': latest_status.id,
                     'erreur': latest_status.erreur,
                     'is_solved': latest_status.is_solved,
-                    'is_ignored': latest_status.is_ignored,
                     'temperature': latest_status.temperature,
                     'vibration': latest_status.vibration,
                     'timestamp': latest_status.timestamp.isoformat() if latest_status.timestamp else None
@@ -1048,7 +1032,6 @@ def get_latest_status_by_site(site_id):
                 results.append({
                     'id': latest.id,
                     'erreur': latest.erreur,
-                    'is_ignored': latest.is_ignored,
                     'is_solved': latest.is_solved,
                     'temperature': latest.temperature,
                     'timestamp': latest.timestamp.isoformat() if latest.timestamp else None,

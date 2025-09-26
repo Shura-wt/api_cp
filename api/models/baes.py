@@ -10,6 +10,7 @@ class Baes(TimestampMixin,db.Model):
     name = db.Column(db.String(50), unique=True, nullable=True)
     label = db.Column(db.String(50), nullable=True)
     position = db.Column(db.JSON, nullable=False)
+    is_ignored = db.Column(db.Boolean, default=False, nullable=False)
 
     # La clé étrangère est optionnelle (nullable=True) car une BAES peut ne pas être affectée à un étage.
     etage_id = db.Column(db.Integer, db.ForeignKey('etages.id', ondelete='SET NULL'), nullable=True)

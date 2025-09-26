@@ -110,6 +110,7 @@ swagger_template = {
                 "label": {"type": "string"},
                 "position": {"type": "object"},
                 "etage_id": {"type": "integer", "format": "int64"},
+                "is_ignored": {"type": "boolean"},
                 "created_at": {"type": "string", "format": "date-time"},
                 "updated_at": {"type": "string", "format": "date-time"}
             }
@@ -164,7 +165,6 @@ swagger_template = {
                 "baes_id": {"type": "integer", "format": "int64"},
                 "erreur": {"type": "integer"},
                 "is_solved": {"type": "boolean"},
-                "is_ignored": {"type": "boolean"},
                 "acknowledged_by_user_id": {"type": "integer", "nullable": True},
                 "acknowledged_at": {"type": "string", "format": "date-time", "nullable": True},
                 "timestamp": {"type": "string", "format": "date-time"},

@@ -78,3 +78,72 @@ To make changes to the application:
 ```bash
 docker-compose up -d --build
 ```
+
+
+## Schema change notice
+
+As of 2025-09-26, the field is_ignored has been moved from the status table to the baes table.
+
+- Code now reads/writes the ignore flag at BAES level. Existing API responses still include is_ignored on status payloads for backward compatibility.
+- If you already have a running database, you must migrate your schema manually (MSSQL examples below). Adjust constraint names to your environment if needed.
+
+MSSQL migration example:
+
+```sql
+-- Add column to BAES (with default 0 = false)
+ALTER TABLE baes ADD is_ignored BIT NOT NULL CONSTRAINT DF_baes_is_ignored DEFAULT (0);
+
+-- Optional: initialize BAES.is_ignored from any existing Status rows if applicable
+-- (example: set BAES.is_ignored to 1 if any Status for that BAES was ignored)
+UPDATE b
+SET b.is_ignored = 1
+FROM baes b
+WHERE EXISTS (
+    SELECT 1 FROM status s WHERE s.baes_id = b.id AND s.is_ignored = 1
+);
+
+-- Remove is_ignored from Status once BAES column is in place
+ALTER TABLE status DROP COLUMN is_ignored;
+```
+
+Rebuild containers after migration if needed:
+
+```bash
+docker-compose up -d --build
+```
+
+
+## Modifications effectuées (26/09/2025)
+
+Contexte
+- Suite à la demande « enléve le champs ignorer de la table status et mets le dans la table baes ».
+
+Changements principaux
+- Déplacement du champ is_ignored de la table status vers la table baes.
+- api/models/baes.py : ajout de la colonne is_ignored = db.Column(db.Boolean, default=False, nullable=False).
+- api/models/status.py : suppression de la colonne is_ignored (côté modèle) et ajout d’une propriété proxy is_ignored qui lit/écrit baes.is_ignored pour conserver la compatibilité.
+- api/routes/status_routes.py : ajustements mineurs pour retourner is_ignored à partir de BAES dans certaines réponses (la lecture/écriture via Status.is_ignored reste possible grâce au proxy).
+- README.md : ajout d’une notice de changement de schéma et des instructions de migration MSSQL.
+
+Impact API
+- Les endpoints Status continuent d’accepter et de renvoyer le champ is_ignored ; la valeur est désormais stockée au niveau du BAES associé.
+- Aucune modification n’est requise côté client (rétrocompatibilité maintenue).
+
+Migration base de données (MSSQL)
+- Voir la section « Schema change notice » ci-dessus pour le script de migration d’exemple (ajout de baes.is_ignored, éventuelle initialisation, suppression de status.is_ignored).
+- Adaptez les noms de contraintes à votre environnement si nécessaire.
+
+Fichiers modifiés
+- api/models/baes.py
+- api/models/status.py
+- api/routes/status_routes.py
+- README.md
+
+Déploiement
+- Après migration, reconstruire et redémarrer les conteneurs :
+  
+  docker-compose up -d --build
+
+Vérifications rapides
+- GET /status et GET /status/{id} renvoient bien is_ignored basé sur BAES.
+- POST /status et les PUT de mise à jour de statut acceptent toujours is_ignored et le persistent via BAES.

@@ -305,10 +305,12 @@ def get_baes_by_etage_id(etage_id):
         baes_list = Baes.query.filter_by(etage_id=etage_id).all()
         result = [
             {
-                'id': b.id, 
-                'name': b.name, 
-                'position': b.position, 
+                'id': b.id,
+                'name': b.name,
+                'label': getattr(b, 'label', None),
+                'position': b.position,
                 'etage_id': b.etage_id,
+                'is_ignored': getattr(b, 'is_ignored', False),
                 'erreurs': [status_to_dict(e) for e in b.statuses] if b.statuses else []
             } for b in baes_list
         ]
