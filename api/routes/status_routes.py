@@ -24,7 +24,6 @@ status_bp = Blueprint('status_bp', __name__)
                         'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                         'erreur': {'type': 'integer', 'example': 1},
                         'is_solved': {'type': 'boolean', 'example': False},
-                        'is_ignored': {'type': 'boolean', 'example': False},
                         'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                         'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                         'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -77,7 +76,6 @@ def get_statuses():
                     'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                     'erreur': {'type': 'integer', 'example': 1},
                     'is_solved': {'type': 'boolean', 'example': False},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                     'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                     'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -134,7 +132,6 @@ def get_status(status_id):
                         'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                         'erreur': {'type': 'integer', 'example': 1},
                         'is_solved': {'type': 'boolean', 'example': False},
-                        'is_ignored': {'type': 'boolean', 'example': False},
                         'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                         'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                         'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -215,7 +212,6 @@ def get_statuses_after_timestamp(updated_at):
                         'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                         'erreur': {'type': 'integer', 'example': 1},
                         'is_solved': {'type': 'boolean', 'example': False},
-                        'is_ignored': {'type': 'boolean', 'example': False},
                         'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                         'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                         'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -282,7 +278,6 @@ def get_statuses_by_baes(baes_id):
                     'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                     'erreur': {'type ': 'integer ', 'example': 1, 'description': "Type d'erreur décrit dans le front (1 pour erreur_connexion, 2 pour erreur_batterie)"},
                     'is_solved': {'type': 'boolean', 'example': False},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'name': {'type': 'string', 'example': 'BAES-1', 'description': 'Nom du BAES (utilisé si le BAES n\'existe pas)', 'nullable': True},
                     'label': {'type': 'string', 'example': 'Étiquette BAES', 'description': 'Étiquette du BAES (utilisé si le BAES n\'existe pas)', 'nullable': True},
                     'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'description': 'Température du BAES (utilisé si le BAES n\'existe pas)', 'nullable': True},
@@ -302,7 +297,6 @@ def get_statuses_by_baes(baes_id):
                     'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                     'erreur': {'type': 'integer', 'example': 1},
                     'is_solved': {'type': 'boolean', 'example': False},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                     'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                     'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -395,7 +389,6 @@ def create_status():
                 'type': 'object',
                 'properties': {
                     'is_solved': {'type': 'boolean', 'example': True},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'user_id': {'type': 'integer', 'example': 1, 'description': 'ID de l\'utilisateur qui acquitte l\'erreur (optionnel)'}
                 }
             }
@@ -411,7 +404,6 @@ def create_status():
                     'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                     'erreur': {'type': 'integer', 'example': 1},
                     'is_solved': {'type': 'boolean', 'example': True},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
                     'acknowledged_by_user_id': {'type': 'integer', 'example': 1},
                     'acknowledged_at': {'type': 'string', 'format': 'date-time', 'example': '2023-01-02T14:30:00Z'},
@@ -511,7 +503,6 @@ def update_status_status(status_id):
                 'type': 'object',
                 'properties': {
                     'is_solved': {'type': 'boolean', 'example': False},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                     'vibration': {'type': 'boolean', 'example': True, 'nullable': True}
                 }
@@ -528,7 +519,6 @@ def update_status_status(status_id):
                     'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                     'erreur': {'type': 'integer', 'example': 1},
                     'is_solved': {'type': 'boolean', 'example': False},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
                     'acknowledged_by_user_id': {'type': 'integer', 'example': 1, 'nullable': True},
                     'acknowledged_at': {'type': 'string', 'format': 'date-time', 'example': '2023-01-02T14:30:00Z', 'nullable': True},
@@ -621,7 +611,6 @@ def update_status(baes_id, erreur):
                         'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                         'erreur': {'type': 'integer', 'example': 1},
                         'is_solved': {'type': 'boolean', 'example': True},
-                        'is_ignored': {'type': 'boolean', 'example': False},
                         'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                         'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                         'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -696,7 +685,6 @@ def get_acknowledged_statuses():
                         'baes_name': {'type': 'string', 'example': 'BAES-001'},
                         'erreur': {'type': 'integer', 'example': 1},
                         'is_solved': {'type': 'boolean', 'example': False},
-                        'is_ignored': {'type': 'boolean', 'example': False},
                         'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                         'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                         'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -772,7 +760,6 @@ def get_statuses_by_etage(etage_id):
                     'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                     'erreur': {'type': 'integer', 'example': 1},
                     'is_solved': {'type': 'boolean', 'example': False},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                     'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                     'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -899,7 +886,6 @@ def delete_status(status_id):
                                 'id': {'type': 'integer', 'example': 1},
                                 'erreur': {'type': 'integer', 'example': 1},
                                 'is_solved': {'type': 'boolean', 'example': False},
-                                'is_ignored': {'type': 'boolean', 'example': False},
                                 'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                                 'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                                 'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'}

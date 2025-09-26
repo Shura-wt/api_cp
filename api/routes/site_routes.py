@@ -461,7 +461,6 @@ def get_site_unassigned_baes(site_id):
                 latest_dict = {
                     'id': latest.id,
                     'erreur': latest.erreur,
-                    'is_ignored': latest.is_ignored,
                     'is_solved': latest.is_solved,
                     'temperature': latest.temperature,
                     'timestamp': latest.timestamp.isoformat() if latest.timestamp else None,
@@ -478,7 +477,8 @@ def get_site_unassigned_baes(site_id):
                 'position': b.position,
                 'etage_id': b.etage_id,
                 'label': b.label,
-                'latest_status': latest_dict
+                'latest_status': latest_dict,
+                'is_ignored' : b.is_ignored,
             })
         return jsonify(result), 200
     except Exception as e:
