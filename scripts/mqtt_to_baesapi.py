@@ -3,76 +3,41 @@
 import paho.mqtt.client as mqtt
 from datetime import datetime
 import requests
-import json, traceback
-import logging
-import signal
-import sys
+import json, traceback, os
 
-# Logging configuration
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    stream=sys.stdout,
-)
-logger = logging.getLogger("mqtt_to_baesapi")
-
-# TLS files (unused for plain TCP, kept for future TLS enablement)
 tls_ca_cert = "/etc/mosquitto/ca_certificates/rootCA.pem"
 tls_certfile = "/etc/mosquitto/ca_certificates/mosquitto.crt"
 tls_keyfile = "/etc/mosquitto/ca_certificates/mosquitto.key"
 
-# MQTT credentials (do not log secrets)
-MOSQUITTO_USER = "gps_tracker"
-MOSQUITTO_PWD = "p8$9z5Gn&x"
-MQTT_HOST = "90.113.56.213"
-MQTT_PORT = 1883  # 8883 for TLS
-MQTT_KEEPALIVE = 60
+MOSQUITTO_USER = os.getenv("MQTT_USER", "gps_tracker")
+MOSQUITTO_PWD = os.getenv("MQTT_PASSWORD", "p8$9z5Gn&x")
 
-# BAES API credentials/host (do not log secrets)
-BAESAPI_SERVER = "localhost"
-BAESAPI_USER = "superadmin"
-BAESAPI_PWD = "superadmin_password"
+# MQTT broker configuration (overridable via environment)
+MQTT_HOST = os.getenv("MQTT_HOST", "192.168.22.3")
+MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 
-ANNOUNCE_TOPIC = "testtopic/connection"
-ANNOUNCE_MSG = "connection effectué sript python"  # texte demandé
+BAESAPI_SERVER = os.getenv("BAESAPI_SERVER", "localhost")
+BAESAPI_USER = os.getenv("BAESAPI_USER", "superadmin")
+BAESAPI_PWD = os.getenv("BAESAPI_PWD", "superadmin_password")
 
 
 def on_connect(client, userdata, flags, rc, properties):
-    if rc == 0:
-        logger.info("Connecté au broker MQTT (rc=%s)", rc)
-    else:
-        logger.error("Échec de connexion au broker MQTT (rc=%s)", rc)
-    try:
-        client.publish(ANNOUNCE_TOPIC, ANNOUNCE_MSG, qos=1, retain=False)
-        logger.info("Message d'annonce publié sur '%s'", ANNOUNCE_TOPIC)
-        client.subscribe("baes/data")
-        logger.info("Abonné au topic 'baes/data'")
-    except Exception:
-        logger.exception("Erreur lors de la publication d'annonce ou de l'abonnement")
-
-
-def on_disconnect(client, userdata, rc, properties=None):
-    if rc != 0:
-        logger.warning("Déconnexion inattendue du broker MQTT (rc=%s)", rc)
-    else:
-        logger.info("Déconnexion du broker MQTT (rc=%s)", rc)
+    print(f"Connected with result code {rc}")
+    client.subscribe("front_baes/data")
 
 
 def on_message(client, userdata, message):
     try:
         payload = message.payload.decode('utf-8')
         json_data = json.loads(payload)
-        logger.info("Message reçu sur %s: %s", message.topic, payload)
 
         # Get the error code from the JSON data
         erreur_raw = json_data.get("baes_state", json_data.get("erreur", 6))
         erreur = int(erreur_raw) if isinstance(erreur_raw, (int, float)) or (
-            isinstance(erreur_raw, str) and erreur_raw.isdigit()) else 6
+                isinstance(erreur_raw, str) and erreur_raw.isdigit()) else 6
 
         # Get the baes_id from the JSON data
         baes_id_raw = json_data.get("baes_id")
-        if baes_id_raw is None:
-            raise ValueError("baes_id manquant dans le message")
 
         # Remove colons and convert hex string to integer
         baes_id = int(baes_id_raw.replace(":", ""), 16)
@@ -95,66 +60,29 @@ def on_message(client, userdata, message):
         if vibration is not None:
             data["vibration"] = vibration
 
-        logger.info("Envoi des données vers BAES API: %s", data)
-        result = requests.post(
-            f"http://{BAESAPI_SERVER}:5000/erreurs/", json=data, verify=False, timeout=5.0
-        )
-        logger.info("Réponse BAES API: status=%s body=%s", result.status_code, result.text)
-    except Exception:
-        logger.exception("Erreur lors du décodage et de l'insertion des données")
+        print("Sending data to BAES API:", data)
+        result = requests.post(f"http://{BAESAPI_SERVER}:5000/erreurs/", json=data, verify=False, timeout=5.0)
+        print(result.text)
+    except Exception as e:
+        print("Error while decoding and inserting data:", str(e))
+        traceback.print_exc()
 
 
-def _graceful_shutdown(signum, frame):
-    logger.info("Signal %s reçu. Arrêt en cours...", signum)
-    try:
-        client.loop_stop()
-        client.disconnect()
-    except Exception:
-        logger.exception("Erreur pendant l'arrêt du client MQTT")
-    finally:
-        sys.exit(0)
-
-
-# Startup logs
-logger.info("Démarrage du service MQTT -> BAES API")
-try:
-    logger.info(
-        "Versions: paho-mqtt=%s, requests=%s", getattr(mqtt, "__version__", "?"), getattr(requests, "__version__", "?")
-    )
-except Exception:
-    # Non bloquant
-    pass
-logger.info(
-    "Configuration: MQTT host=%s port=%s keepalive=%s | BAES API server=%s | Announce topic=%s",
-    MQTT_HOST,
-    MQTT_PORT,
-    MQTT_KEEPALIVE,
-    BAESAPI_SERVER,
-    ANNOUNCE_TOPIC,
-)
-
-# Register signal handlers for graceful shutdown
-signal.signal(signal.SIGTERM, _graceful_shutdown)
-signal.signal(signal.SIGINT, _graceful_shutdown)
-
-# MQTT client setup
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+# If you need TLS, uncomment and set certs; also set MQTT_PORT accordingly
 # client.tls_set(ca_certs=tls_ca_cert,
-#                certfile=tls_certfile,
-#                keyfile=tls_keyfile,
-#                tls_version=mqtt.ssl.PROTOCOL_TLS)
+#               certfile=tls_certfile,
+#               keyfile=tls_keyfile,
+#               tls_version=mqtt.ssl.PROTOCOL_TLS)
 # client.tls_insecure_set(True)
 client.on_connect = on_connect
-client.on_disconnect = on_disconnect
 client.on_message = on_message
 client.username_pw_set(MOSQUITTO_USER, MOSQUITTO_PWD)
 
-# Connect and start loop
-try:
-    logger.info("Connexion au broker MQTT %s:%s ...", MQTT_HOST, MQTT_PORT)
-    client.connect(MQTT_HOST, MQTT_PORT, MQTT_KEEPALIVE)
-    logger.info("Boucle MQTT démarrée")
-    client.loop_forever()
-except Exception:
-    logger.exception("Échec critique: impossible de se connecter ou de démarrer la boucle MQTT")
-    sys.exit(1)
+# Configure automatic reconnect/backoff so the process doesn't crash if broker is down
+client.reconnect_delay_set(min_delay=1, max_delay=60)
+
+print(f"Starting MQTT client. Broker={MQTT_HOST}:{MQTT_PORT}")
+# Use async connect and let loop_forever keep trying the first connection
+client.connect_async(MQTT_HOST, MQTT_PORT, 60)  # 8883 for TLS
+client.loop_forever(retry_first_connection=True)
