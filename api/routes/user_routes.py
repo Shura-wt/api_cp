@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from flasgger import swag_from
-from models.user import User
-from models import db
+from models import User, db
 from sqlalchemy import text
 
 user_bp = Blueprint('user_bp', __name__)
@@ -273,7 +272,7 @@ def create_user():
     return jsonify(result), 201
 
 
-@user_bp.route('/<int:user_id>', methods=['PUT'])
+@user_bp.route('/<int:user_id>', methods=['PUT', 'PATCH'])
 @swag_from({
     'tags': ['User CRUD'],
     'description': "Met à jour un utilisateur existant par son ID.",

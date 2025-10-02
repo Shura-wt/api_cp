@@ -1,11 +1,7 @@
 # routes/batiment_routes.py
 from flask import Blueprint, request, jsonify, current_app
 from flasgger import swag_from
-from models.batiment import Batiment
-from models.etage import Etage
-from models.baes import Baes
-from models.carte import Carte
-from models import db
+from models import Batiment, Etage, Baes, Carte, db
 
 
 batiment_bp = Blueprint('batiment_bp', __name__)

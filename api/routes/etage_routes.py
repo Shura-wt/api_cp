@@ -1,10 +1,7 @@
 # routes/etage_routes.py
 from flask import Blueprint, request, jsonify, current_app
 from flasgger import swag_from
-from models.etage import Etage
-from models.baes import Baes
-from models.carte import Carte
-from models import db
+from models import Etage, Baes, Carte, db
 from routes.general_routes import status_to_dict
 
 etage_bp = Blueprint('etage_bp', __name__)
@@ -305,10 +302,12 @@ def get_baes_by_etage_id(etage_id):
         baes_list = Baes.query.filter_by(etage_id=etage_id).all()
         result = [
             {
-                'id': b.id, 
-                'name': b.name, 
-                'position': b.position, 
+                'id': b.id,
+                'name': b.name,
+                'label': getattr(b, 'label', None),
+                'position': b.position,
                 'etage_id': b.etage_id,
+                'is_ignored': getattr(b, 'is_ignored', False),
                 'erreurs': [status_to_dict(e) for e in b.statuses] if b.statuses else []
             } for b in baes_list
         ]

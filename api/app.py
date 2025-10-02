@@ -12,9 +12,7 @@ from flasgger import Swagger
 from flask_login import LoginManager
 from sqlalchemy.exc import OperationalError, InterfaceError
 
-from models import db
-from models.user import User
-from models.site import Site
+from models import db, User, Site
 from default_data import create_default_data
 
 # Initialisation de l'application Flask
@@ -68,8 +66,8 @@ swagger_config = {
         {
             "endpoint": "apispec",
             "route": "/apispec.json",
-            # Exclure les anciennes routes '/erreurs' de la documentation pour éviter les doublons
-            "rule_filter": lambda rule: not rule.rule.startswith('/erreurs'),
+            # Exclure certaines routes legacy de la documentation pour éviter les doublons
+            "rule_filter": lambda rule: not (rule.rule.startswith('/erreurs') or rule.rule.startswith('/user-site-roles')),
             "model_filter": lambda tag: True,
         }
     ],
@@ -110,6 +108,7 @@ swagger_template = {
                 "label": {"type": "string"},
                 "position": {"type": "object"},
                 "etage_id": {"type": "integer", "format": "int64"},
+                "is_ignored": {"type": "boolean"},
                 "created_at": {"type": "string", "format": "date-time"},
                 "updated_at": {"type": "string", "format": "date-time"}
             }
@@ -164,7 +163,6 @@ swagger_template = {
                 "baes_id": {"type": "integer", "format": "int64"},
                 "erreur": {"type": "integer"},
                 "is_solved": {"type": "boolean"},
-                "is_ignored": {"type": "boolean"},
                 "acknowledged_by_user_id": {"type": "integer", "nullable": True},
                 "acknowledged_at": {"type": "string", "format": "date-time", "nullable": True},
                 "timestamp": {"type": "string", "format": "date-time"},

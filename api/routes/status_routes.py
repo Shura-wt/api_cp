@@ -1,9 +1,7 @@
 # routes/status_routes.py
 from flask import Blueprint, request, jsonify, current_app
 from flasgger import swag_from
-from models.status import Status
-from models.baes import Baes
-from models import db
+from models import Status, Baes, User, Site, UserSiteRole, Batiment, Etage, db
 from flask_login import current_user, login_required
 from datetime import datetime, timezone
 
@@ -26,7 +24,6 @@ status_bp = Blueprint('status_bp', __name__)
                         'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                         'erreur': {'type': 'integer', 'example': 1},
                         'is_solved': {'type': 'boolean', 'example': False},
-                        'is_ignored': {'type': 'boolean', 'example': False},
                         'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                         'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                         'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -46,7 +43,6 @@ def get_statuses():
             'baes_id': e.baes_id,
             'erreur': e.erreur,
             'is_solved': e.is_solved,
-            'is_ignored': e.is_ignored,
             'temperature': e.temperature,
             'vibration': e.vibration,
             'timestamp': e.timestamp.isoformat() if e.timestamp else None,
@@ -80,7 +76,6 @@ def get_statuses():
                     'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                     'erreur': {'type': 'integer', 'example': 1},
                     'is_solved': {'type': 'boolean', 'example': False},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                     'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                     'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -101,7 +96,6 @@ def get_status(status_id):
             'baes_id': status.baes_id,
             'erreur': status.erreur,
             'is_solved': status.is_solved,
-            'is_ignored': status.is_ignored,
             'temperature': status.temperature,
             'vibration': status.vibration,
             'timestamp': status.timestamp.isoformat() if status.timestamp else None,
@@ -138,7 +132,6 @@ def get_status(status_id):
                         'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                         'erreur': {'type': 'integer', 'example': 1},
                         'is_solved': {'type': 'boolean', 'example': False},
-                        'is_ignored': {'type': 'boolean', 'example': False},
                         'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                         'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                         'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -170,7 +163,6 @@ def get_statuses_after_timestamp(updated_at):
             # Récupérer le login de l'utilisateur qui a acquitté l'erreur
             acknowledged_by_login = None
             if e.acknowledged_by_user_id:
-                from models.user import User
                 user = User.query.get(e.acknowledged_by_user_id)
                 if user:
                     acknowledged_by_login = user.login
@@ -180,7 +172,6 @@ def get_statuses_after_timestamp(updated_at):
                 'baes_id': e.baes_id,
                 'erreur': e.erreur,
                 'is_solved': e.is_solved,
-                'is_ignored': e.is_ignored,
                 'temperature': e.temperature,
                 'vibration': e.vibration,
                 'timestamp': e.timestamp.isoformat() if e.timestamp else None,
@@ -221,7 +212,6 @@ def get_statuses_after_timestamp(updated_at):
                         'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                         'erreur': {'type': 'integer', 'example': 1},
                         'is_solved': {'type': 'boolean', 'example': False},
-                        'is_ignored': {'type': 'boolean', 'example': False},
                         'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                         'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                         'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -249,7 +239,7 @@ def get_statuses_by_baes(baes_id):
             # Récupérer le login de l'utilisateur qui a acquitté l'erreur
             acknowledged_by_login = None
             if e.acknowledged_by_user_id:
-                from models.user import User
+                from models import User
                 user = User.query.get(e.acknowledged_by_user_id)
                 if user:
                     acknowledged_by_login = user.login
@@ -259,7 +249,6 @@ def get_statuses_by_baes(baes_id):
                 'baes_id': e.baes_id,
                 'erreur': e.erreur,
                 'is_solved': e.is_solved,
-                'is_ignored': e.is_ignored,
                 'temperature': e.temperature,
                 'vibration': e.vibration,
                 'timestamp': e.timestamp.isoformat() if e.timestamp else None,
@@ -289,7 +278,6 @@ def get_statuses_by_baes(baes_id):
                     'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                     'erreur': {'type ': 'integer ', 'example': 1, 'description': "Type d'erreur décrit dans le front (1 pour erreur_connexion, 2 pour erreur_batterie)"},
                     'is_solved': {'type': 'boolean', 'example': False},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'name': {'type': 'string', 'example': 'BAES-1', 'description': 'Nom du BAES (utilisé si le BAES n\'existe pas)', 'nullable': True},
                     'label': {'type': 'string', 'example': 'Étiquette BAES', 'description': 'Étiquette du BAES (utilisé si le BAES n\'existe pas)', 'nullable': True},
                     'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'description': 'Température du BAES (utilisé si le BAES n\'existe pas)', 'nullable': True},
@@ -309,7 +297,6 @@ def get_statuses_by_baes(baes_id):
                     'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                     'erreur': {'type': 'integer', 'example': 1},
                     'is_solved': {'type': 'boolean', 'example': False},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                     'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                     'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -355,7 +342,6 @@ def create_status():
             baes_id=data['baes_id'],
             erreur=data['erreur'],
             is_solved=data.get('is_solved', False),
-            is_ignored=data.get('is_ignored', False),
             temperature=data.get('temperature'),  # Utiliser la température fournie ou null
             vibration=data.get('vibration', False)  # Utiliser la vibration fournie ou False par défaut
         )
@@ -367,7 +353,6 @@ def create_status():
             'baes_id': status.baes_id,
             'erreur': status.erreur,
             'is_solved': status.is_solved,
-            'is_ignored': status.is_ignored,
             'temperature': status.temperature,
             'vibration': status.vibration,
             'timestamp': status.timestamp.isoformat() if status.timestamp else None,
@@ -404,7 +389,6 @@ def create_status():
                 'type': 'object',
                 'properties': {
                     'is_solved': {'type': 'boolean', 'example': True},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'user_id': {'type': 'integer', 'example': 1, 'description': 'ID de l\'utilisateur qui acquitte l\'erreur (optionnel)'}
                 }
             }
@@ -420,7 +404,6 @@ def create_status():
                     'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                     'erreur': {'type': 'integer', 'example': 1},
                     'is_solved': {'type': 'boolean', 'example': True},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
                     'acknowledged_by_user_id': {'type': 'integer', 'example': 1},
                     'acknowledged_at': {'type': 'string', 'format': 'date-time', 'example': '2023-01-02T14:30:00Z'},
@@ -446,9 +429,6 @@ def update_status_status(status_id):
         status_changed = False
         if 'is_solved' in data and status.is_solved != data['is_solved']:
             status.is_solved = data['is_solved']
-            status_changed = True
-        if 'is_ignored' in data and status.is_ignored != data['is_ignored']:
-            status.is_ignored = data['is_ignored']
             status_changed = True
 
         # Si l'état a changé, enregistrer l'utilisateur qui a fait l'acquittement
@@ -480,7 +460,6 @@ def update_status_status(status_id):
             'baes_id': status.baes_id,
             'erreur': status.erreur,
             'is_solved': status.is_solved,
-            'is_ignored': status.is_ignored,
             'temperature': status.temperature,
             'vibration': status.vibration,
             'timestamp': status.timestamp.isoformat() if status.timestamp else None,
@@ -494,7 +473,7 @@ def update_status_status(status_id):
         current_app.logger.error(f"Error in update_status_status: {e}")
         return jsonify({'error': str(e)}), 500
 
-@status_bp.route('/baes/<int:baes_id>/type/<int:_erreur>', methods=['PUT'])
+@status_bp.route('/baes/<int:baes_id>/type/<int:erreur>', methods=['PUT'])
 @swag_from({
     'tags': ['Status CRUD'],
     'description': "Modifie les détails d'une erreur identifiée par le BAES et le type d'erreur.",
@@ -524,7 +503,8 @@ def update_status_status(status_id):
                 'type': 'object',
                 'properties': {
                     'is_solved': {'type': 'boolean', 'example': False},
-                    'is_ignored': {'type': 'boolean', 'example': False}
+                    'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
+                    'vibration': {'type': 'boolean', 'example': True, 'nullable': True}
                 }
             }
         }
@@ -539,7 +519,6 @@ def update_status_status(status_id):
                     'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                     'erreur': {'type': 'integer', 'example': 1},
                     'is_solved': {'type': 'boolean', 'example': False},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
                     'acknowledged_by_user_id': {'type': 'integer', 'example': 1, 'nullable': True},
                     'acknowledged_at': {'type': 'string', 'format': 'date-time', 'example': '2023-01-02T14:30:00Z', 'nullable': True},
@@ -572,8 +551,21 @@ def update_status(baes_id, erreur):
         if 'is_solved' in data:
             status_obj.is_solved = data['is_solved']
 
-        if 'is_ignored' in data:
-            status_obj.is_ignored = data['is_ignored']
+
+        # Facultatif: mise à jour des valeurs de mesure
+        if 'temperature' in data:
+            try:
+                status_obj.temperature = float(data['temperature']) if data['temperature'] is not None else None
+            except (TypeError, ValueError):
+                # Ignorer silencieusement si la valeur n'est pas convertible
+                pass
+        if 'vibration' in data:
+            # Accepte bool, 0/1, "true"/"false"
+            val = data['vibration']
+            if isinstance(val, str):
+                status_obj.vibration = val.strip().lower() in ['1', 'true', 'yes', 'on']
+            else:
+                status_obj.vibration = bool(val)
 
         db.session.commit()
 
@@ -590,7 +582,6 @@ def update_status(baes_id, erreur):
             'baes_id': status_obj.baes_id,
             'erreur': status_obj.erreur,
             'is_solved': status_obj.is_solved,
-            'is_ignored': status_obj.is_ignored,
             'temperature': status_obj.temperature,
             'vibration': status_obj.vibration,
             'timestamp': status_obj.timestamp.isoformat() if status_obj.timestamp else None,
@@ -620,7 +611,6 @@ def update_status(baes_id, erreur):
                         'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                         'erreur': {'type': 'integer', 'example': 1},
                         'is_solved': {'type': 'boolean', 'example': True},
-                        'is_ignored': {'type': 'boolean', 'example': False},
                         'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                         'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                         'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -655,7 +645,6 @@ def get_acknowledged_statuses():
                 'baes_id': e.baes_id,
                 'erreur': e.erreur,
                 'is_solved': e.is_solved,
-                'is_ignored': e.is_ignored,
                 'temperature': e.temperature,
                 'vibration': e.vibration,
                 'timestamp': e.timestamp.isoformat() if e.timestamp else None,
@@ -696,7 +685,6 @@ def get_acknowledged_statuses():
                         'baes_name': {'type': 'string', 'example': 'BAES-001'},
                         'erreur': {'type': 'integer', 'example': 1},
                         'is_solved': {'type': 'boolean', 'example': False},
-                        'is_ignored': {'type': 'boolean', 'example': False},
                         'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                         'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                         'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -744,7 +732,6 @@ def get_statuses_by_etage(etage_id):
                     'baes_name': baes.name,
                     'erreur': e.erreur,
                     'is_solved': e.is_solved,
-                    'is_ignored': e.is_ignored,
                     'temperature': e.temperature,
                     'vibration': e.vibration,
                     'timestamp': e.timestamp.isoformat() if e.timestamp else None,
@@ -773,7 +760,6 @@ def get_statuses_by_etage(etage_id):
                     'baes_id': {'type': 'integer', 'format': 'int64', 'example': 1},
                     'erreur': {'type': 'integer', 'example': 1},
                     'is_solved': {'type': 'boolean', 'example': False},
-                    'is_ignored': {'type': 'boolean', 'example': False},
                     'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                     'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                     'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'},
@@ -808,7 +794,6 @@ def get_latest_status():
             'baes_id': status.baes_id,
             'erreur': status.erreur,
             'is_solved': status.is_solved,
-            'is_ignored': status.is_ignored,
             'temperature': status.temperature,
             'vibration': status.vibration,
             'timestamp': status.timestamp.isoformat() if status.timestamp else None,
@@ -901,7 +886,6 @@ def delete_status(status_id):
                                 'id': {'type': 'integer', 'example': 1},
                                 'erreur': {'type': 'integer', 'example': 1},
                                 'is_solved': {'type': 'boolean', 'example': False},
-                                'is_ignored': {'type': 'boolean', 'example': False},
                                 'temperature': {'type': 'number', 'format': 'float', 'example': 25.5, 'nullable': True},
                                 'vibration': {'type': 'boolean', 'example': True, 'nullable': True},
                                 'timestamp': {'type': 'string', 'format': 'date-time', 'example': '2023-01-01T12:00:00Z'}
@@ -970,6 +954,7 @@ def get_status_by_user(user_id):
                 'label': baes.label,
                 'position': baes.position,
                 'etage_id': baes.etage_id,
+                'is_ignored': getattr(baes, 'is_ignored', False),
                 'latest_status': None
             }
             
@@ -978,7 +963,6 @@ def get_status_by_user(user_id):
                     'id': latest_status.id,
                     'erreur': latest_status.erreur,
                     'is_solved': latest_status.is_solved,
-                    'is_ignored': latest_status.is_ignored,
                     'temperature': latest_status.temperature,
                     'vibration': latest_status.vibration,
                     'timestamp': latest_status.timestamp.isoformat() if latest_status.timestamp else None
@@ -989,4 +973,107 @@ def get_status_by_user(user_id):
         return jsonify(result), 200
     except Exception as e:
         current_app.logger.error(f"Error in get_status_by_user: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@status_bp.route('/site/<int:site_id>/latest', methods=['GET'])
+@swag_from({
+    'tags': ['Status CRUD'],
+    'description': 'Récupère les derniers statuts pour tous les BAES d’un site donné.',
+    'parameters': [{ 'name': 'site_id', 'in': 'path', 'type': 'integer', 'required': True }],
+    'responses': {200: {'description': 'Liste des derniers statuts.'}, 404: {'description': 'Site ou BAES non trouvés.'}}
+})
+def get_latest_status_by_site(site_id):
+    try:
+        from models.site import Site
+        from models.batiment import Batiment
+        from models.etage import Etage
+        from models.baes import Baes
+        site = Site.query.get(site_id)
+        if not site:
+            return jsonify({'error': 'Site non trouvé'}), 404
+
+        # Get all BAES that belong to the site
+        baes_list = Baes.query.join(Etage, Baes.etage_id == Etage.id).\
+            join(Batiment, Etage.batiment_id == Batiment.id).\
+            filter(Batiment.site_id == site_id).all()
+
+        if not baes_list:
+            return jsonify([]), 200
+
+        results = []
+        from models.status import Status
+        for b in baes_list:
+            latest = Status.query.filter_by(baes_id=b.id).order_by(Status.updated_at.desc()).first()
+            if latest:
+                acknowledged_by_login = None
+                if latest.acknowledged_by_user_id:
+                    from models.user import User
+                    u = User.query.get(latest.acknowledged_by_user_id)
+                    if u:
+                        acknowledged_by_login = u.login
+                results.append({
+                    'id': latest.id,
+                    'erreur': latest.erreur,
+                    'is_solved': latest.is_solved,
+                    'temperature': latest.temperature,
+                    'timestamp': latest.timestamp.isoformat() if latest.timestamp else None,
+                    'vibration': latest.vibration,
+                    'baes_id': latest.baes_id,
+                    'updated_at': latest.updated_at.isoformat() if getattr(latest, 'updated_at', None) else None,
+                    'acknowledged_at': latest.acknowledged_at.isoformat() if getattr(latest, 'acknowledged_at', None) else None,
+                    'acknowledged_by_login': acknowledged_by_login,
+                    'acknowledged_by_user_id': latest.acknowledged_by_user_id,
+                })
+        return jsonify(results), 200
+    except Exception as e:
+        current_app.logger.error(f"Error in get_latest_status_by_site: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@status_bp.route('/site/<int:site_id>/summary', methods=['GET'])
+@swag_from({
+    'tags': ['Status CRUD'],
+    'description': 'Retourne des compteurs par type pour un site (connexion=0, batterie=4, ok=6, inconnu).',
+    'parameters': [{ 'name': 'site_id', 'in': 'path', 'type': 'integer', 'required': True }],
+    'responses': {200: {'description': 'Résumé'}, 404: {'description': 'Site non trouvé'}}
+})
+def get_status_summary_by_site(site_id):
+    try:
+        from models.site import Site
+        from models.batiment import Batiment
+        from models.etage import Etage
+        from models.baes import Baes
+        from models.status import Status
+        site = Site.query.get(site_id)
+        if not site:
+            return jsonify({'error': 'Site non trouvé'}), 404
+
+        baes_list = Baes.query.join(Etage, Baes.etage_id == Etage.id).\
+            join(Batiment, Etage.batiment_id == Batiment.id).\
+            filter(Batiment.site_id == site_id).all()
+
+        counters = {
+            'connection_errors': 0,
+            'battery_errors': 0,
+            'ok': 0,
+            'unknown': 0
+        }
+
+        for b in baes_list:
+            latest = Status.query.filter_by(baes_id=b.id).order_by(Status.updated_at.desc()).first()
+            if not latest:
+                counters['unknown'] += 1
+            else:
+                if latest.erreur == 0:
+                    counters['connection_errors'] += 1
+                elif latest.erreur == 4:
+                    counters['battery_errors'] += 1
+                elif latest.erreur == 6:
+                    counters['ok'] += 1
+                else:
+                    counters['unknown'] += 1
+        return jsonify(counters), 200
+    except Exception as e:
+        current_app.logger.error(f"Error in get_status_summary_by_site: {e}")
         return jsonify({'error': str(e)}), 500

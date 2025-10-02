@@ -16,11 +16,11 @@ class Status(TimestampMixin,db.Model):
     baes_id = db.Column(db.BigInteger, db.ForeignKey('baes.id'), nullable=False)
     erreur = db.Column(db.Integer, name='erreur', nullable=False)
     is_solved = db.Column(db.Boolean, default=False, nullable=False)
-    is_ignored = db.Column(db.Boolean, default=False, nullable=False)
     temperature = db.Column(db.Float, nullable=True)
     vibration = db.Column(db.Boolean, nullable=True, default=False)
     acknowledged_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     acknowledged_at = db.Column(DateTime(timezone=True), nullable=True)
+
 
     # Ajouter cette relation
     acknowledged_by = db.relationship('User', foreign_keys=[acknowledged_by_user_id])

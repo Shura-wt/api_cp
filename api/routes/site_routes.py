@@ -1,10 +1,31 @@
 # routes/site_routes.py
 from flask import Blueprint, request, jsonify, current_app
 from flasgger import swag_from
-from models.site import Site
-from models import db
+from models import Site, db
 
 site_bp = Blueprint('site_bp', __name__)
+
+# Helper to get current user id from Authorization: Bearer <token>
+import jwt
+
+def _get_current_user_id():
+    try:
+        from models.user import User
+        from flask_login import current_user
+        # Prefer JWT if provided
+        from flask import request, current_app
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            token = auth_header.split(' ', 1)[1]
+            secret_key = current_app.config.get('JWT_SECRET_KEY', 'default_secret_key')
+            payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+            return payload.get('user_id')
+        # Fallback to session user
+        if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+            return current_user.id
+    except Exception:
+        pass
+    return None
 
 @site_bp.route('/', methods=['GET'])
 @swag_from({
@@ -300,4 +321,188 @@ def delete_site(site_id):
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error in delete_site: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@site_bp.route('/<int:site_id>/full', methods=['GET'])
+@swag_from({
+    'tags': ['Site CRUD'],
+    'description': 'Retourne la hiérarchie complète Site → Bâtiments → Étages → BAES, avec latest_status par BAES.',
+    'parameters': [
+        {
+            'name': 'site_id', 'in': 'path', 'type': 'integer', 'required': True,
+            'description': 'ID du site'
+        },
+        {
+            'name': 'include', 'in': 'query', 'type': 'string', 'required': False,
+            'description': 'Paramètre optionnel pour filtrer les inclusions (ex: batiments,etages,baes,status_latest)'
+        }
+    ],
+    'responses': {200: {'description': 'Hiérarchie du site.'}, 404: {'description': 'Site non trouvé'}}
+})
+def get_site_full(site_id):
+    try:
+        site = Site.query.get(site_id)
+        if not site:
+            return jsonify({'error': 'Site non trouvé'}), 404
+
+        # include param (currently parsed but not used; full payload returned)
+        _ = request.args.get('include')
+
+        from flask import url_for
+        import os
+        from models.status import Status
+
+        def carte_to_dict(carte):
+            if not carte:
+                return {}
+            try:
+                filename = os.path.basename(carte.chemin) if getattr(carte, 'chemin', None) else None
+                public_url = url_for('carte_bp.uploaded_file', filename=filename, _external=True) if filename else None
+            except Exception:
+                public_url = None
+            return {
+                'id': getattr(carte, 'id', None),
+                'chemin': public_url,
+                'site_id': getattr(carte, 'site_id', None),
+                'etage_id': getattr(carte, 'etage_id', None),
+                'center_lat': getattr(carte, 'centerLat', getattr(carte, 'center_lat', None)),
+                'center_lng': getattr(carte, 'centerLng', getattr(carte, 'center_lng', None)),
+                'zoom': getattr(carte, 'zoom', None),
+            }
+
+        batiments_payload = []
+        for bat in (site.batiments or []):
+            etages_payload = []
+            for etage in (bat.etages or []):
+                baes_payload = []
+                for b in (etage.baes or []):
+                    latest = Status.query.filter_by(baes_id=b.id).order_by(Status.timestamp.desc()).first()
+                    latest_dict = None
+                    if latest:
+                        # acknowledged_by_login lookup
+                        acknowledged_by_login = None
+                        if latest.acknowledged_by_user_id:
+                            from models.user import User
+                            u = User.query.get(latest.acknowledged_by_user_id)
+                            if u:
+                                acknowledged_by_login = u.login
+                        latest_dict = {
+                            'id': latest.id,
+                            'erreur': latest.erreur,
+                            'is_ignored': latest.is_ignored,
+                            'is_solved': latest.is_solved,
+                            'temperature': latest.temperature,
+                            'timestamp': latest.timestamp.isoformat() if latest.timestamp else None,
+                            'vibration': latest.vibration,
+                            'baes_id': latest.baes_id,
+                            'updated_at': latest.updated_at.isoformat() if getattr(latest, 'updated_at', None) else None,
+                            'acknowledged_at': latest.acknowledged_at.isoformat() if getattr(latest, 'acknowledged_at', None) else None,
+                            'acknowledged_by_login': acknowledged_by_login,
+                            'acknowledged_by_user_id': latest.acknowledged_by_user_id,
+                        }
+                    baes_payload.append({
+                        'id': b.id,
+                        'name': b.name,
+                        'position': b.position,
+                        'etage_id': b.etage_id,
+                        'label': b.label,
+                        'latest_status': latest_dict,
+                        'statuses': []
+                    })
+                etages_payload.append({
+                    'id': etage.id,
+                    'name': etage.name,
+                    'carte': carte_to_dict(getattr(etage, 'carte', None)),
+                    'baes': baes_payload
+                })
+            batiments_payload.append({
+                'id': bat.id,
+                'name': bat.name,
+                'polygon_points': getattr(bat, 'polygon_points', None),
+                'etages': etages_payload
+            })
+
+        payload = {
+            'id': site.id,
+            'name': site.name,
+            'carte': carte_to_dict(getattr(site, 'carte', None)),
+            'batiments': batiments_payload
+        }
+        return jsonify(payload), 200
+    except Exception as e:
+        current_app.logger.error(f"Error in get_site_full: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@site_bp.route('/<int:site_id>/baes/unassigned', methods=['GET'])
+@swag_from({
+    'tags': ['Site CRUD'],
+    'description': 'Liste les BAES non placés (etage_id == null) pour un site donné. Si non déterminable, renvoie tous les non placés.',
+    'parameters': [{ 'name': 'site_id', 'in': 'path', 'type': 'integer', 'required': True }],
+    'responses': {200: {'description': 'Liste des BAES non placés.'}}
+})
+def get_site_unassigned_baes(site_id):
+    try:
+        from models.baes import Baes
+        from models.status import Status
+        baes_list = Baes.query.filter_by(etage_id=None).all()
+        result = []
+        for b in baes_list:
+            latest = Status.query.filter_by(baes_id=b.id).order_by(Status.timestamp.desc()).first()
+            latest_dict = None
+            if latest:
+                acknowledged_by_login = None
+                if latest.acknowledged_by_user_id:
+                    from models.user import User
+                    u = User.query.get(latest.acknowledged_by_user_id)
+                    if u:
+                        acknowledged_by_login = u.login
+                latest_dict = {
+                    'id': latest.id,
+                    'erreur': latest.erreur,
+                    'is_solved': latest.is_solved,
+                    'temperature': latest.temperature,
+                    'timestamp': latest.timestamp.isoformat() if latest.timestamp else None,
+                    'vibration': latest.vibration,
+                    'baes_id': latest.baes_id,
+                    'updated_at': latest.updated_at.isoformat() if getattr(latest, 'updated_at', None) else None,
+                    'acknowledged_at': latest.acknowledged_at.isoformat() if getattr(latest, 'acknowledged_at', None) else None,
+                    'acknowledged_by_login': acknowledged_by_login,
+                    'acknowledged_by_user_id': latest.acknowledged_by_user_id,
+                }
+            result.append({
+                'id': b.id,
+                'name': b.name,
+                'position': b.position,
+                'etage_id': b.etage_id,
+                'label': b.label,
+                'latest_status': latest_dict,
+                'is_ignored' : b.is_ignored,
+            })
+        return jsonify(result), 200
+    except Exception as e:
+        current_app.logger.error(f"Error in get_site_unassigned_baes: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@site_bp.route('/my', methods=['GET'])
+@swag_from({
+    'tags': ['Site CRUD'],
+    'description': 'Retourne les sites accessibles à l’utilisateur courant.',
+    'responses': {200: {'description': 'Liste des sites.'}, 401: {'description': 'Unauthorized'}}
+})
+def get_my_sites():
+    user_id = _get_current_user_id()
+    if not user_id:
+        return jsonify({'error': 'unauthorized'}), 401
+    try:
+        from models.site import Site
+        from models.user_site_role import UserSiteRole
+        sites = db.session.query(Site).join(UserSiteRole, UserSiteRole.site_id == Site.id).\
+            filter(UserSiteRole.user_id == user_id).distinct().all()
+        result = [{'id': s.id, 'name': s.name} for s in sites]
+        return jsonify(result), 200
+    except Exception as e:
+        current_app.logger.error(f"Error in get_my_sites: {e}")
         return jsonify({'error': str(e)}), 500

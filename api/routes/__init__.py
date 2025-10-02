@@ -13,6 +13,7 @@ from .role_routes import role_bp
 from .user_site_role_routes import user_site_role_bp
 from .general_routes import general_routes_bp
 from .config_routes import config_bp
+from .me_routes import me_bp
 
 def init_app(app):
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -31,6 +32,10 @@ def init_app(app):
     # Register the same blueprint with the new URL prefix, using a unique name
     app.register_blueprint(status_bp, url_prefix='/status', name='status_bp_new')
     app.register_blueprint(user_site_role_bp, url_prefix='/user_site_role')
+    # Legacy alias for backward compatibility
+    app.register_blueprint(user_site_role_bp, url_prefix='/user-site-roles', name='user_site_role_bp_legacy')
     app.register_blueprint(general_routes_bp, url_prefix='/general')
     app.register_blueprint(config_bp, url_prefix='/config')
+    # Root-level routes (e.g., /me)
+    app.register_blueprint(me_bp, url_prefix='')
 

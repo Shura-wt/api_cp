@@ -1,5 +1,23 @@
 # BAES API – Documentation des routes avec schémas JSON
 
+## Résumé de l’API et technologies utilisées
+- Objet: API REST pour gérer les BAES (Blocs Autonomes d’Éclairage de Sécurité) et leur référentiel: sites, bâtiments, étages, équipements BAES, statuts/erreurs, cartes/coordonnées, utilisateurs et rôles.
+- Principales fonctionnalités:
+  - Authentification (JWT) et gestion de session légère (login/logout).
+  - CRUD sur les entités: utilisateurs, rôles, sites, bâtiments, étages, BAES, statuts, cartes.
+  - Attribution de rôles par site et rôles globaux via user_site_role.
+  - Documentation intégrée Swagger (Flasgger) sur /swagger/ et schéma exposé sur /apispec.json.
+  - CORS activé pour appels front-end.
+- Technologies clés:
+  - Backend: Python Flask.
+  - BDD: Microsoft SQL Server 2017 via SQLAlchemy + pyodbc (ODBC Driver 17).
+  - Migrations: Flask-Migrate (Alembic).
+  - Auth et session: Flask-Login (pour gestion utilisateur) + JWT applicatif.
+  - Documentation: Flasgger/Swagger UI.
+  - Conteneurisation: Docker + docker-compose.
+  - Exécution en prod conteneur: uWSGI + supervisord.
+  - Outils/utilitaires: Bridge MQTT -> API (scripts/mqtt_to_baesapi.py), CORS, logging.
+
 Dernière mise à jour: 2025-09-01 11:29
 
 Cette documentation fournit, pour chaque route, l’URL appelée, les paramètres, les corps JSON envoyés/reçus et les types de données. Les types suivent la convention JSON: string, integer, number, boolean, object, array, null. Les dates sont des strings au format ISO 8601.
@@ -158,17 +176,17 @@ Sommaire des sections
 - DELETE /etages/{etage_id}
   - Réponse 200: { "message": string } | 404
 - GET /etages/{etage_id}/baes
-  - Réponse 200: [ { "id": integer, "name": string, "label"?: string, "position"?: object, "etage_id": integer } ]
+  - Réponse 200: [ { "id": integer, "name": string, "label"?: string, "position"?: object, "etage_id": integer, "is_ignored": boolean } ]
 
 
 ## BAES (/baes)
 - GET /baes/
-  - Réponse 200: [ { "id": integer, "name": string, "label"?: string, "position"?: object, "etage_id": integer|null } ]
+  - Réponse 200: [ { "id": integer, "name": string, "label"?: string, "position"?: object, "etage_id": integer|null, "is_ignored": boolean } ]
 - GET /baes/{baes_id}
-  - Réponse 200: { id, name, label?, position?, etage_id?, created_at, updated_at } | 404
+  - Réponse 200: { id, name, label?, position?, etage_id?, is_ignored, created_at, updated_at } | 404
 - POST /baes/
-  - Requête: { "name": string, "label"?: string, "position"?: object, "etage_id"?: integer|null }
-  - Réponse 201: { id, name, label?, position?, etage_id? }
+  - Requête: { "name": string, "label"?: string, "position"?: object, "etage_id"?: integer|null, "is_ignored"?: boolean }
+  - Réponse 201: { id, name, label?, position?, etage_id?, is_ignored }
 - PUT /baes/{baes_id}
   - Requête: { champs BAES à modifier }
   - Réponse 200: { ... } | 404
@@ -178,6 +196,9 @@ Sommaire des sections
   - Réponse 200: [ BAES sans etage_id ]
 - GET /baes/user/{user_id}
   - Réponse 200: [ BAES visibles pour l’utilisateur ]
+- PUT /baes/{baes_id}/ignore
+  - Requête: { "is_ignored": boolean }
+  - Réponse 200: { id, name, label?, position?, etage_id?, is_ignored }
 
 
 ## Statuts / Erreurs (/status) [alias: /erreurs]
@@ -213,7 +234,7 @@ Les mêmes schémas s’appliquent à /erreurs/...
 - PUT /status/{status_id}/status
   - Requête: { "is_solved"?: boolean, "is_ignored"?: boolean, "acknowledged_by_user_id"?: integer|null, "acknowledged_at"?: string|null }
   - Réponse 200: { ... }
-- PUT /status/baes/{baes_id}/type/{_erreur}
+- PUT /status/baes/{baes_id}/type/{erreur}
   - Requête: { "is_solved"?: boolean, "is_ignored"?: boolean }
   - Réponse 200: { ... }
 - GET /status/acknowledged
@@ -313,3 +334,14 @@ Les mêmes schémas s’appliquent à /erreurs/...
 Références
 - Swagger UI: /swagger/
 - Spécification JSON: /apispec.json (les routes legacy /erreurs sont exclues de la spec pour éviter les doublons)
+
+
+## Swagger / OpenAPI
+
+- UI: http://localhost:5000/swagger/
+- JSON spec: http://localhost:5000/apispec.json
+
+Notes:
+- Legacy paths are hidden from the Swagger doc to avoid duplicate endpoints:
+  - /erreurs (legacy for status) is excluded in favor of /status
+  - /user-site-roles (legacy alias) is excluded in favor of /user_site_role

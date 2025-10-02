@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from models import db, UserSiteRole, User, Site, Role
 
 # Créer le blueprint pour les routes user-site-role
-user_site_role_bp = Blueprint('user_site_role', __name__, url_prefix='/user-site-roles')
+user_site_role_bp = Blueprint('user_site_role', __name__)
 
 
 @user_site_role_bp.route('', methods=['GET'])

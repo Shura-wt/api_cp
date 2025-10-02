@@ -1,12 +1,97 @@
 from flask import Blueprint, request, jsonify, redirect, url_for, render_template, current_app
 from flask_login import login_user, logout_user, login_required
 from flasgger import swag_from
-from models.user import User
-from models import db
+from models import User, db
 import jwt
 import datetime
 
 auth_bp = Blueprint('auth', __name__)
+
+# Helper to get current user from Authorization: Bearer <token>
+def _get_current_user():
+    try:
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return None
+        token = auth_header.split(' ', 1)[1]
+        secret_key = current_app.config.get('JWT_SECRET_KEY', 'default_secret_key')
+        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+        user_id = payload.get('user_id')
+        if not user_id:
+            return None
+        return User.query.get(user_id)
+    except Exception:
+        return None
+
+@auth_bp.route('/me', methods=['GET'])
+@swag_from({
+    'tags': ['Authentication'],
+    'description': 'Obtenir l\'utilisateur courant (route sous /auth). Nécessite un header Authorization: Bearer <token>.',
+    'parameters': [
+        {
+            'name': 'Authorization',
+            'in': 'header',
+            'type': 'string',
+            'required': True,
+            'description': 'Bearer <token>'
+        }
+    ],
+    'responses': {
+        '200': {
+            'description': 'Utilisateur courant avec ses rôles et sites accessibles.',
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'id': {'type': 'integer', 'example': 12},
+                    'login': {'type': 'string', 'example': 'jdoe'},
+                    'roles': {
+                        'type': 'array',
+                        'items': {'type': 'string'},
+                        'example': ['user', 'admin']
+                    },
+                    'sites': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'id': {'type': 'integer', 'example': 1},
+                                'name': {'type': 'string', 'example': 'Site A'}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        '401': {
+            'description': 'Unauthorized',
+            'schema': {'type': 'object', 'properties': {'error': {'type': 'string', 'example': 'unauthorized'}}}
+        }
+    }
+})
+def me():
+    user = _get_current_user()
+    if not user:
+        return jsonify({'error': 'unauthorized'}), 401
+
+    # Collect unique role names across global and site-specific roles
+    role_names = []
+    seen_roles = set()
+    sites_dict = {}
+    for assoc in user.user_site_roles.all():
+        if assoc.role and assoc.role.name not in seen_roles:
+            seen_roles.add(assoc.role.name)
+            role_names.append(assoc.role.name)
+        if assoc.site:
+            sid = assoc.site.id
+            if sid not in sites_dict:
+                sites_dict[sid] = {'id': assoc.site.id, 'name': assoc.site.name}
+
+    return jsonify({
+        'id': user.id,
+        'login': user.login,
+        'roles': role_names,
+        'sites': list(sites_dict.values())
+    }), 200
 
 @auth_bp.route('/login', methods=['POST', 'OPTIONS'])
 @swag_from({

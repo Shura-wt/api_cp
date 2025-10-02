@@ -1,9 +1,7 @@
 # routes/user_role_routes.py
 from flask import Blueprint, request, jsonify, current_app
 from flasgger import swag_from
-from models.user import User
-from models.role import Role
-from models import db
+from models import User, Role, db
 
 user_role_bp = Blueprint('user_role_bp', __name__)
 #
